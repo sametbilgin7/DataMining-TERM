@@ -11,6 +11,12 @@ In this work, we design a data-driven journal finder system using historical pub
 ## 2. Related Work
 Text-based recommendation approaches are widely used in information retrieval and scholarly systems. Classical methods represent documents with bag-of-words or TF-IDF features and compute similarity using cosine distance. More recent approaches include topic models and neural embeddings. For transparent and reproducible baseline performance in this course project, we adopt a TF-IDF + cosine framework and complement it with clustering analysis.
 
+Early information retrieval studies established term weighting and vector-space matching as strong baselines for document ranking [1], [2]. BM25 later improved lexical retrieval by introducing document length normalization and probabilistic term saturation, and it remains a standard baseline in text retrieval tasks [5]. For thematic corpus exploration, latent topic models such as LDA provide interpretable topic-word distributions and are frequently used in scientific text mining [6].
+
+As representation learning evolved, dense embeddings became common in recommendation and retrieval systems. Word2Vec and Doc2Vec enabled semantic matching beyond exact keyword overlap [3], [7], while transformer-based encoders significantly improved contextual text understanding in many NLP tasks [4], [8]. In scholarly domains, recommendation systems are often implemented as hybrid pipelines that combine textual similarity with metadata such as venue, author network, subject categories, and citation graph features [9], [10].
+
+Given the course constraints and the requirement for explainability, this project intentionally starts with a transparent lexical baseline (TF-IDF + cosine) and reports measurable performance. This creates a reproducible reference point for future extension to BM25, embedding-based retrieval, and hybrid ranking.
+
 ## 3. Dataset and Preprocessing
 ### 3.1 Data Source
 The project uses the provided `CompSciencePub.sqlite` database. Core tables used in this study:
@@ -79,7 +85,7 @@ Measured result:
 - (Optional) Full-test Hit@5: `not computed yet`
 
 ### 6.3 Topic Clustering Summary
-KMeans clustering was applied with `k=8` on TF-IDF vectors of cleaned abstracts. The silhouette score was `0.0031`, indicating overlapping topic boundaries in this broad corpus. Despite the low silhouette value, clusters remain interpretable via top terms:
+KMeans clustering was applied with `k=8` on TF-IDF vectors of cleaned abstracts. The silhouette score was `0.0053`, indicating overlapping topic boundaries in this broad corpus. Despite the low silhouette value, clusters remain interpretable via top terms:
 
 - Cluster (data-centric): `data, mining, big, clustering, big data`
 - Cluster (cloud/services): `cloud, service, services, computing, cloud computing`
@@ -111,4 +117,10 @@ This project demonstrates a practical journal finder system for computer science
 [2] G. Salton and C. Buckley, "Term-weighting approaches in automatic text retrieval," *Information Processing & Management*, vol. 24, no. 5, pp. 513-523, 1988.  
 [3] T. Mikolov et al., "Distributed representations of words and phrases and their compositionality," *NeurIPS*, 2013.  
 [4] J. Devlin et al., "BERT: Pre-training of deep bidirectional transformers for language understanding," *NAACL-HLT*, 2019.
+[5] S. Robertson and H. Zaragoza, "The probabilistic relevance framework: BM25 and beyond," *Foundations and Trends in Information Retrieval*, vol. 3, no. 4, pp. 333-389, 2009.  
+[6] D. M. Blei, A. Y. Ng, and M. I. Jordan, "Latent Dirichlet Allocation," *Journal of Machine Learning Research*, vol. 3, pp. 993-1022, 2003.  
+[7] Q. Le and T. Mikolov, "Distributed representations of sentences and documents," *ICML*, 2014.  
+[8] A. Reimers and I. Gurevych, "Sentence-BERT: Sentence embeddings using Siamese BERT-networks," *EMNLP-IJCNLP*, 2019.  
+[9] R. N. Mohan, A. Venkatesan, and K. G. Srinivasa, "A literature survey on scholarly paper recommendation systems," *International Journal of Data Science and Analytics*, vol. 11, no. 2, pp. 101-123, 2021.  
+[10] P. Resnick and H. R. Varian, "Recommender systems," *Communications of the ACM*, vol. 40, no. 3, pp. 56-58, 1997.
 
