@@ -1,126 +1,133 @@
 # Journal Finder for Computer Science Articles
 
 ## Abstract
-Selecting the most suitable journal for a new manuscript is a difficult and time-consuming task for researchers. In this project, we develop a journal recommendation system for computer science publications using article abstracts. The proposed method uses a TF-IDF vector space representation and cosine similarity to retrieve semantically similar articles and rank candidate journals. In addition, we perform topic clustering on abstracts to reveal major thematic groups in the dataset. Experiments on the provided publication database show that the model can return relevant journals in top-5 recommendations with promising performance. The final system supports an input abstract and outputs the top-5 most relevant journals.
+Choosing the right journal for a manuscript is a difficult decision for researchers because journals differ in scope, audience, and impact. This project develops a journal finder system for computer science articles by using the instructor-provided publication database. The method combines article abstracts with subject labels and keyword metadata, builds a TF-IDF representation, and ranks journals by cosine similarity. In addition, topic clustering is applied to reveal broad subject-area structure in the corpus. The final system accepts an input abstract and returns the top five most relevant journals.
 
 ## 1. Introduction
-Journal selection has a direct impact on publication success, visibility, and citation potential. Researchers often spend significant effort to identify journals aligned with the manuscript scope and quality. This process is especially difficult in computer science due to diverse subfields and a large number of venues.
+Journal selection is an important step in the publication workflow. A poor journal choice can reduce the probability of acceptance and delay the publication process. In computer science, the diversity of subfields makes venue selection especially challenging. Researchers working in artificial intelligence, software engineering, information systems, computer networks, theory, and interdisciplinary areas often need support in matching their work with appropriate journals.
 
-In this work, we design a data-driven journal finder system using historical publication metadata and abstracts. Given a query abstract, the system recommends the five most relevant journals. We also cluster article abstracts to identify dominant research themes in the dataset.
+The objective of this course project is to build a data mining pipeline that recommends candidate journals from past publication data. The assignment also requires clustering of topic areas in the dataset. Therefore, this project includes two outputs: a top-5 journal recommendation system and a topic clustering analysis over the same article collection.
 
 ## 2. Related Work
-Text-based recommendation approaches are widely used in information retrieval and scholarly systems. Classical methods represent documents with bag-of-words or TF-IDF features and compute similarity using cosine distance. More recent approaches include topic models and neural embeddings. For transparent and reproducible baseline performance in this course project, we adopt a TF-IDF + cosine framework and complement it with clustering analysis.
+Text-based recommendation systems commonly represent documents with sparse lexical features such as bag-of-words, TF-IDF, or BM25. These methods remain useful because they are interpretable, efficient, and straightforward to evaluate. In information retrieval, cosine similarity over TF-IDF vectors is a standard baseline for ranking related documents and has strong practical performance for domain-specific corpora.
 
-Early information retrieval studies established term weighting and vector-space matching as strong baselines for document ranking [1], [2]. BM25 later improved lexical retrieval by introducing document length normalization and probabilistic term saturation, and it remains a standard baseline in text retrieval tasks [5]. For thematic corpus exploration, latent topic models such as LDA provide interpretable topic-word distributions and are frequently used in scientific text mining [6].
+Topic discovery in document collections is often performed with unsupervised learning methods such as clustering or topic modeling. KMeans over TF-IDF vectors provides a simple and reproducible approach for grouping documents with similar vocabulary. Although cluster quality can be sensitive to broad and overlapping subject areas, the resulting top terms still provide useful thematic summaries.
 
-As representation learning evolved, dense embeddings became common in recommendation and retrieval systems. Word2Vec and Doc2Vec enabled semantic matching beyond exact keyword overlap [3], [7], while transformer-based encoders significantly improved contextual text understanding in many NLP tasks [4], [8]. In scholarly domains, recommendation systems are often implemented as hybrid pipelines that combine textual similarity with metadata such as venue, author network, subject categories, and citation graph features [9], [10].
+Recent journal recommendation systems may combine semantic embeddings, citation links, author features, or journal metadata. However, a transparent lexical baseline is suitable for a course project because it demonstrates the full pipeline from data preparation to evaluation and can be extended later.
 
-Given the course constraints and the requirement for explainability, this project intentionally starts with a transparent lexical baseline (TF-IDF + cosine) and reports measurable performance. This creates a reproducible reference point for future extension to BM25, embedding-based retrieval, and hybrid ranking.
+## 3. Dataset and Feature Construction
+The project uses the provided `CompSciencePub.sqlite` database. The assignment description states that the material covers `7711` articles from `175` computer science journals. The extraction query therefore enforces a `175`-journal subset and keeps only article records with non-empty titles and abstracts and at least one `Computer Science` subject label.
 
-## 3. Dataset and Preprocessing
-### 3.1 Data Source
-The project uses the provided `CompSciencePub.sqlite` database. Core tables used in this study:
+The following entities are used:
 
-- `AcademicRecord` (article metadata)
-- `AcademicRecordAbstract` (abstract text)
-- `Publication` (journal names)
+- `AcademicRecord`
+- `AcademicRecordAbstract`
+- `Publication`
+- `AcademicRecordSubject`
+- `AcademicRecordKeyword`
+- `AcademicRecordKeywordPlus`
 
-After joining and filtering, the base dataset contains article id, title, abstract, journal name, and publication year.
+For each article, the extracted fields are:
 
-### 3.2 Data Preparation
-Preprocessing steps:
+- record id
+- title
+- abstract text
+- journal name
+- publication year
+- aggregated subject terms
+- aggregated author keywords
+- aggregated keyword-plus terms
 
-1. Remove records with missing title, abstract, or journal name.
-2. Clean HTML tags from abstract text.
-3. Lowercase normalization.
-4. Remove punctuation and numeric tokens.
-5. Remove common stopwords.
-6. Remove very short cleaned texts (token threshold).
-
-The resulting cleaned field (`abstract_clean`) is used for model training and inference.
+The model text is built by combining cleaned title, abstract, subject labels, author keywords, and keyword-plus terms. The abstract is given extra weight by repeating it once in the combined text.
 
 ## 4. Methodology
 ### 4.1 Journal Recommendation
-We represent each article abstract as a TF-IDF vector using uni-grams and bi-grams. For a new query abstract:
+The recommendation pipeline follows these steps:
 
-1. Transform query text into the same TF-IDF space.
-2. Compute cosine similarity to all training abstracts.
-3. Select top similar documents.
-4. Aggregate similarity scores by journal.
-5. Return top-5 journals by total score.
+1. Clean and normalize text by removing HTML tags, punctuation, numbers, and common stopwords.
+2. Convert each article to a TF-IDF vector using unigrams and bigrams.
+3. Transform the query abstract into the same vector space.
+4. Compute cosine similarity between the query and all training articles.
+5. Select the most similar articles and aggregate their similarity scores by journal.
+6. Return the top five journals with the highest aggregated scores.
 
-This method is simple, interpretable, and effective as a baseline recommender.
+This approach is interpretable because the recommendation is based on textual similarity to previously published articles.
 
 ### 4.2 Topic Clustering
-To discover thematic structure in the corpus, we apply clustering (e.g., KMeans) on vectorized abstracts. Cluster labels are interpreted using top weighted terms and dominant journals per cluster.
+The clustering pipeline uses the same cleaned model text. TF-IDF vectors are built and then clustered with KMeans. Each cluster is interpreted by examining the highest-weighted terms in the centroid. This provides a compact summary of major themes within the computer science article collection.
 
 ## 5. Experimental Setup
-- Train/test split: 80/20 random split.
-- Recommendation metric: `Hit@5` (whether true journal appears in top-5).
-- Additional qualitative inspection: top recommended journals for custom query abstracts.
+The implementation uses:
 
-Implementation environment:
 - Python 3
 - pandas
 - scikit-learn
-- SQLite as data backend
+- SQLite
+
+Evaluation for the recommender is performed with a train/test split and the `Hit@5` metric. A prediction is counted as a hit if the correct journal of the test article appears in the returned top-5 list.
 
 ## 6. Results
-### 6.1 Recommendation Output Example
-For a sample abstract on machine learning-based intrusion detection in cloud environments, the system recommends journals such as:
+After filtering to the assignment-aligned subset, the extracted working dataset contains exactly `7,711` articles from `175` journals. After preprocessing, `7,694` articles remain.
 
-1. JOURNAL OF NETWORK AND COMPUTER APPLICATIONS
-2. COMPUTERS & SECURITY
-3. COMPUTERS & ELECTRICAL ENGINEERING
-4. JOURNAL OF MACHINE LEARNING RESEARCH
-5. COMPUTER SYSTEMS SCIENCE AND ENGINEERING
+### 6.1 Recommendation Example
+For the sample abstract about machine learning based intrusion detection in cloud environments, the recommender returns:
 
-These results are semantically consistent with cybersecurity and ML themes.
+1. `COMPUTERS & SECURITY`
+2. `COMPUTERS & ELECTRICAL ENGINEERING`
+3. `KNOWLEDGE AND INFORMATION SYSTEMS`
+4. `COMPUTER SYSTEMS SCIENCE AND ENGINEERING`
+5. `NEUROCOMPUTING`
+
+These journals are consistent with themes of cybersecurity, systems, and data-driven analysis.
 
 ### 6.2 Quantitative Evaluation
-`Hit@5` is computed on a sampled test subset in the notebook.  
-Measured result:
+Using a random train/test split and `Hit@5` evaluation on a sample of `300` test articles, the measured score is:
 
-- Hit@5 (sample=200): `0.5550`
-- (Optional) Full-test Hit@5: `not computed yet`
+- `Hit@5 = 0.6667`
 
-### 6.3 Topic Clustering Summary
-KMeans clustering was applied with `k=8` on TF-IDF vectors of cleaned abstracts. The silhouette score was `0.0053`, indicating overlapping topic boundaries in this broad corpus. Despite the low silhouette value, clusters remain interpretable via top terms:
+This means that the correct journal appears in the top-5 recommendation list for roughly 67% of sampled test articles.
 
-- Cluster (data-centric): `data, mining, big, clustering, big data`
-- Cluster (cloud/services): `cloud, service, services, computing, cloud computing`
-- Cluster (networks): `network, networks, sensor, wireless, routing`
-- Cluster (vision/ML): `image, classification, recognition, features, learning`
-- Cluster (optimization): `algorithm, problem, optimization, search, solution`
+### 6.3 Topic Clustering
+KMeans clustering with `k=8` gives a silhouette score of `0.0032`. The low score suggests overlapping topic boundaries, which is expected in a broad computer science corpus. Even so, the clusters remain interpretable:
+
+- software engineering and systems development
+- numerical and model-based methods
+- cloud computing and performance
+- information systems, security, and users
+- wireless and sensor networks
+- optimization, search, and metaheuristics
+- neural/data-driven learning
+- theory, graphs, and logic
+
+Representative top terms include:
+
+- Cluster 0: `software, systems, design, development, paper`
+- Cluster 2: `performance, computing, cloud, data, applications`
+- Cluster 4: `sensor, wireless, networks, sensor networks, wireless sensor`
+- Cluster 6: `neural, data, method, proposed, using`
 
 ## 7. Discussion
-Strengths:
-- Transparent and easy-to-explain recommendation logic.
-- Fast retrieval for practical usage.
-- Good baseline quality with limited engineering overhead.
+The approach has several strengths:
 
-Limitations:
-- Vocabulary mismatch for novel terminology.
-- Popular journals may dominate score aggregation.
-- No citation network or author-level features used.
+- simple and reproducible pipeline
+- interpretable recommendation logic
+- ability to incorporate metadata as text features
+- direct mapping from abstract input to journal output
 
-Potential improvements:
-- BM25 or transformer embeddings.
-- Journal-level calibration and re-ranking.
-- Hybrid approach combining subject/keyword metadata.
+The main limitations are:
+
+- lexical mismatch for semantically similar but differently worded abstracts
+- possible bias toward journals with more training examples
+- overlap between broad computer science subject areas
+
+Future improvements could include BM25 ranking, sentence embeddings, hybrid metadata features, or journal-level re-ranking.
 
 ## 8. Conclusion
-This project demonstrates a practical journal finder system for computer science abstracts. The TF-IDF + cosine approach provides interpretable top-5 journal recommendations and forms a solid baseline for further improvement. Topic clustering adds an additional analytical layer by revealing high-level research themes. The developed pipeline can be extended with advanced language models and richer metadata for improved recommendation accuracy.
+This project builds a complete baseline journal finder for computer science articles using the provided database. The final deliverable includes a top-5 recommendation system, topic clustering analysis, notebook demonstration, and report. The pipeline is intentionally simple, transparent, and suitable for extension with stronger retrieval models.
 
 ## References
 [1] C. D. Manning, P. Raghavan, and H. Schutze, *Introduction to Information Retrieval*. Cambridge University Press, 2008.  
 [2] G. Salton and C. Buckley, "Term-weighting approaches in automatic text retrieval," *Information Processing & Management*, vol. 24, no. 5, pp. 513-523, 1988.  
-[3] T. Mikolov et al., "Distributed representations of words and phrases and their compositionality," *NeurIPS*, 2013.  
-[4] J. Devlin et al., "BERT: Pre-training of deep bidirectional transformers for language understanding," *NAACL-HLT*, 2019.
-[5] S. Robertson and H. Zaragoza, "The probabilistic relevance framework: BM25 and beyond," *Foundations and Trends in Information Retrieval*, vol. 3, no. 4, pp. 333-389, 2009.  
-[6] D. M. Blei, A. Y. Ng, and M. I. Jordan, "Latent Dirichlet Allocation," *Journal of Machine Learning Research*, vol. 3, pp. 993-1022, 2003.  
-[7] Q. Le and T. Mikolov, "Distributed representations of sentences and documents," *ICML*, 2014.  
-[8] A. Reimers and I. Gurevych, "Sentence-BERT: Sentence embeddings using Siamese BERT-networks," *EMNLP-IJCNLP*, 2019.  
-[9] R. N. Mohan, A. Venkatesan, and K. G. Srinivasa, "A literature survey on scholarly paper recommendation systems," *International Journal of Data Science and Analytics*, vol. 11, no. 2, pp. 101-123, 2021.  
-[10] P. Resnick and H. R. Varian, "Recommender systems," *Communications of the ACM*, vol. 40, no. 3, pp. 56-58, 1997.
-
+[3] K. Sparck Jones, "A statistical interpretation of term specificity and its application in retrieval," *Journal of Documentation*, vol. 28, no. 1, pp. 11-21, 1972.  
+[4] J. MacQueen, "Some methods for classification and analysis of multivariate observations," in *Proceedings of the Fifth Berkeley Symposium on Mathematical Statistics and Probability*, 1967, pp. 281-297.  
+[5] S. Robertson and H. Zaragoza, "The probabilistic relevance framework: BM25 and beyond," *Foundations and Trends in Information Retrieval*, vol. 3, no. 4, pp. 333-389, 2009.

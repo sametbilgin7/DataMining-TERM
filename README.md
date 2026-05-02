@@ -1,94 +1,86 @@
-# DataMining-TERM: Journal Finder Project
+# Data Mining Final Project
 
-This repository contains a data mining project that recommends the top-5 journals for a given computer science abstract.
+This repository contains a journal finder project built from the instructor-provided computer science publication database.
+
+## Deliverables Covered
+
+- Source code
+- Jupyter notebook
+- IEEE-style report draft
+- Working top-5 journal recommender
+- Topic clustering output
 
 ## Project Structure
 
-- `CompSciencePub.sqlite`: main dataset (SQLite)
-- `CS_JournalAbstracts.zip`: backup archive (`CompSciencePub.bak`)
-- `src/extract_base_dataset.sql`: SQL query to build base dataset
-- `src/preprocess.py`: preprocessing pipeline for text cleaning
-- `src/recommender.py`: TF-IDF + cosine based top-5 journal recommender
-- `notebooks/journal_finder.ipynb`: notebook for demo and evaluation
-- `report/ieee_report.md`: IEEE-style report draft
+- `CompSciencePub.sqlite`: instructor-provided SQLite database
+- `CS_JournalAbstracts.zip`: instructor-provided database backup archive
+- `src/extract_cs_dataset.sql`: SQL query to build the CS article dataset
+- `src/preprocess.py`: preprocessing and feature-text generation
+- `src/recommender.py`: TF-IDF journal recommendation script
+- `src/evaluation.py`: Hit@5 evaluation script
+- `src/clustering.py`: topic clustering script
+- `notebooks/journal_finder.ipynb`: demonstration notebook
+- `report/ieee_report.md`: report draft
 - `outputs/`: generated CSV files
 
-## Requirements
+## Setup
 
-- Python 3.9+
-- SQLite (`sqlite3`)
-- Python packages:
-  - `pandas`
-  - `scikit-learn`
-
-Install packages:
+Install requirements:
 
 ```bash
-python3 -m pip install pandas scikit-learn
+python3 -m pip install pandas scikit-learn notebook
 ```
 
-## Step-by-Step Usage
+## Usage
 
-### 1) Build base dataset from SQLite
+### 1. Extract the CS article dataset
 
 ```bash
-cd "/Users/sametbilgin/Desktop/data-term"
+mkdir -p outputs
 sqlite3 "CompSciencePub.sqlite" \
   -cmd ".headers on" \
   -cmd ".mode csv" \
   -cmd ".output outputs/base_articles.csv" \
-  < "src/extract_base_dataset.sql"
+  < "src/extract_cs_dataset.sql"
 ```
 
-Expected output file:
-- `outputs/base_articles.csv`
-
-### 2) Preprocess and clean text
+### 2. Preprocess the dataset
 
 ```bash
-python3 "src/preprocess.py" \
-  --input "outputs/base_articles.csv" \
-  --output "outputs/base_articles_clean.csv"
+python3 src/preprocess.py \
+  --input outputs/base_articles.csv \
+  --output outputs/base_articles_clean.csv
 ```
 
-Expected output file:
-- `outputs/base_articles_clean.csv`
-
-### 3) Run journal recommendation
+### 3. Run a journal recommendation query
 
 ```bash
-python3 "src/recommender.py" \
-  --input "outputs/base_articles_clean.csv" \
-  --query "This study proposes a machine learning based intrusion detection framework for cloud computing environments using feature selection and ensemble classification." \
-  --top-k 5
+python3 src/recommender.py \
+  --input outputs/base_articles_clean.csv \
+  --query "This paper proposes a machine learning intrusion detection framework for cloud computing environments."
 ```
 
-The command returns:
-- ranked top-5 journal names
-- aggregated similarity scores
-- matched document counts
+### 4. Evaluate the recommender
 
-### 4) Open notebook for demonstration
+```bash
+python3 src/evaluation.py \
+  --input outputs/base_articles_clean.csv \
+  --sample-size 300 \
+  --k 5
+```
 
-Open and run:
-- `notebooks/journal_finder.ipynb`
+### 5. Generate topic clusters
 
-Notebook includes:
-- data loading and quick EDA
-- model building
-- sample recommendation output
-- simple `Hit@5` evaluation
-
-## Deliverables Checklist
-
-- [x] Source code in GitHub repository
-- [x] Jupyter notebook
-- [x] IEEE-style report draft
-- [x] Working top-5 journal recommender
-- [ ] Final report PDF export
-- [ ] Final metric values filled in report
+```bash
+python3 src/clustering.py \
+  --input outputs/base_articles_clean.csv \
+  --k 8 \
+  --output outputs/topic_clusters.csv
+```
 
 ## Notes
 
-- `CompSciencePub.sqlite` is a large file and may trigger GitHub large-file warnings.
-- Consider adding `.gitignore` for system files (for example `.DS_Store`) before final cleanup commit.
+- The extraction query is constrained to a `175 journal / 7711 article` subset so the working dataset matches the assignment statement.
+- The subset uses computer-science-tagged articles and a transparent journal selection rule encoded in [extract_cs_dataset.sql](/Users/sametbilgin/Desktop/data-term/src/extract_cs_dataset.sql).
+- The recommendation baseline uses TF-IDF plus cosine similarity.
+- Topic clustering uses KMeans on TF-IDF representations of article text, subjects, and keywords.
